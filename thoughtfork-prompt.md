@@ -1963,8 +1963,8 @@ module.exports = {
 ## 開発手順
 
 1. プロジェクトディレクトリを作成し、上記すべてのファイルを配置
-2. `npm install` で依存関係をインストール
-3. `npm run build` でビルド
+2. `pnpm install` で依存関係をインストール
+3. `pnpm build` でビルド
 4. Chrome の `chrome://extensions/` で「パッケージ化されていない拡張機能を読み込む」
 5. `dist` フォルダを選択
 6. Claude.ai を開き、拡張機能アイコンをクリックしてSide Panelを開く
