@@ -1,12 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark Mode (Default) */
+    --bg-main: #020617;
+    /* gray-950 */
+    --text-main: #f3f4f6;
+    /* gray-100 */
+    --border-main: rgba(255, 255, 255, 0.05);
+    /* white/5 */
+    --card-main: rgba(17, 24, 39, 0.6);
+    /* gray-900/40 */
+  }
+
+  :root.light-mode {
+    /* Light Mode */
+    --bg-main: #f8fafc;
+    /* slate-50 */
+    --text-main: #1e293b;
+    /* slate-800 */
+    --border-main: rgba(0, 0, 0, 0.1);
+    --card-main: rgba(255, 255, 255, 0.8);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-md shadow-xl;
+    background-color: var(--card-main);
+    border: 1px solid var(--border-main);
+  }
+
+  .glass-card {
+    @apply backdrop-blur-sm transition-all duration-200;
+    background-color: var(--card-main);
+    border: 1px solid var(--border-main);
+  }
+
+  .light-mode .glass-card:hover {
+    background-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .light-mode .text-glow {
+    text-shadow: none;
+    /* Disable neon glow in light mode */
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 5px currentColor);
+    opacity: 1;
+  }
+
+  50% {
+    filter: drop-shadow(0 0 15px currentColor);
+    opacity: 0.8;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
 
 /* Custom styles */
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  @apply font-sans antialiased text-gray-100 bg-gray-950;
 }
 
 /* Line clamp utility */
@@ -19,21 +118,16 @@ body {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  @apply bg-gray-700/50 rounded-full hover:bg-gray-600/50 transition-colors;
 }
 
 /* Canvas for 3D view */

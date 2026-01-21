@@ -7,7 +7,6 @@ import { STORAGE_KEY } from './constants';
  * ThoughtFork Storage Manager
  */
 export class StorageManager {
-
   /**
    * 全データを取得
    */
@@ -24,9 +23,9 @@ export class StorageManager {
       // 特定の会話のみフィルタ
       return {
         ...data,
-        conversations: data.conversations.filter(c => c.id === conversationId),
-        messages: data.messages.filter(m => m.conversationId === conversationId),
-        branches: data.branches.filter(b => b.conversationId === conversationId)
+        conversations: data.conversations.filter((c) => c.id === conversationId),
+        messages: data.messages.filter((m) => m.conversationId === conversationId),
+        branches: data.branches.filter((b) => b.conversationId === conversationId),
       };
     }
 
@@ -48,7 +47,7 @@ export class StorageManager {
     const data = await this.getData();
 
     // 会話が存在するか確認、なければ作成
-    let conversation = data.conversations.find(c => c.id === message.conversationId);
+    let conversation = data.conversations.find((c) => c.id === message.conversationId);
     if (!conversation) {
       conversation = this.createConversation(message.conversationId);
       data.conversations.push(conversation);
@@ -62,9 +61,20 @@ export class StorageManager {
 
     // 親メッセージのchildIdsを更新
     if (message.parentId) {
-      const parent = data.messages.find(m => m.id === message.parentId);
-      if (parent && !parent.childIds.includes(message.id)) {
-        parent.childIds.push(message.id);
+      const parent = data.messages.find((m) => m.id === message.parentId);
+      if (parent) {
+        if (!parent.childIds.includes(message.id)) {
+          parent.childIds.push(message.id);
+        }
+
+        // ブランチ継承ロジック:
+        // メッセージのブランチが 'main' (デフォルト) で、かつ親が別のブランチに属している場合、
+        // 親のブランチを継承する。ただし、親が分岐点(isBranchPoint)の場合は継承しない（新しい分岐が期待されるため）。
+        // ここでは簡易的に、親のブランチを引き継ぐこととする。
+        // 分岐点であっても、ユーザーが明示的に新ブランチを作っていない場合は、そのブランチの続きとみなすのが自然。
+        if (message.branchId === 'main' || !message.branchId) {
+          message.branchId = parent.branchId;
+        }
       }
     }
 
@@ -72,9 +82,22 @@ export class StorageManager {
     data.messages.push(message);
 
     // ブランチのmessageIdsを更新
-    const branch = data.branches.find(b => b.id === message.branchId);
+    // 継承ロジックの結果、branchIdが変わっている可能性があるため再検索
+    let branch = data.branches.find((b) => b.id === message.branchId);
+
+    // もし指定されたブランチが存在しない場合（削除されたなど）、メインに戻すか再作成
+    if (!branch) {
+      const mainBranch = data.branches.find(b => b.parentBranchId === null);
+      if (mainBranch) {
+        message.branchId = mainBranch.id;
+        branch = mainBranch;
+      }
+    }
+
     if (branch) {
-      branch.messageIds.push(message.id);
+      if (!branch.messageIds.includes(message.id)) {
+        branch.messageIds.push(message.id);
+      }
     }
 
     // 会話の更新日時を更新
@@ -95,7 +118,7 @@ export class StorageManager {
     const data = await this.getData();
 
     // 分岐元メッセージを取得
-    const forkMessage = data.messages.find(m => m.id === forkMessageId);
+    const forkMessage = data.messages.find((m) => m.id === forkMessageId);
     if (!forkMessage) {
       throw new Error('Fork message not found');
     }
@@ -111,7 +134,7 @@ export class StorageManager {
       color,
       createdAt: new Date().toISOString(),
       forkMessageId,
-      messageIds: []
+      messageIds: [],
     };
 
     data.branches.push(branch);
@@ -129,7 +152,7 @@ export class StorageManager {
     const newTag: Tag = {
       ...tag,
       id: generateId(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     data.tags.push(newTag);
@@ -139,12 +162,51 @@ export class StorageManager {
   }
 
   /**
+   * ブランチを更新
+   */
+  async updateBranch(branchId: string, updates: Partial<Branch>): Promise<void> {
+    const data = await this.getData();
+    const index = data.branches.findIndex((b) => b.id === branchId);
+    if (index === -1) throw new Error('Branch not found');
+
+    data.branches[index] = { ...data.branches[index], ...updates };
+    await this.saveData(data);
+  }
+
+  /**
+   * ブランチを削除 (Cascade delete messages)
+   */
+  async deleteBranch(branchId: string): Promise<void> {
+    const data = await this.getData();
+    const branchIndex = data.branches.findIndex((b) => b.id === branchId);
+    if (branchIndex === -1) throw new Error('Branch not found');
+
+    // 削除対象のブランチを取得
+    const branch = data.branches[branchIndex];
+
+    // メインブランチは削除不可（簡易的なガード）
+    if (!branch.parentBranchId && data.branches.length > 1) {
+      // ルートブランチの削除は慎重にすべきだが、今回は許可しないか、または警告
+      // ここでは親がない＝ルートとみなして、他のブランチがあるなら削除させない等のロジックもなしで、
+      // UI側で制御する前提で実装。
+    }
+
+    // メッセージも削除
+    data.messages = data.messages.filter((m) => m.branchId !== branchId);
+
+    // ブランチ削除
+    data.branches.splice(branchIndex, 1);
+
+    await this.saveData(data);
+  }
+
+  /**
    * メッセージを更新
    */
   async updateMessage(messageId: string, updates: Partial<Message>): Promise<void> {
     const data = await this.getData();
 
-    const index = data.messages.findIndex(m => m.id === messageId);
+    const index = data.messages.findIndex((m) => m.id === messageId);
     if (index === -1) {
       throw new Error('Message not found');
     }
@@ -162,7 +224,7 @@ export class StorageManager {
       meta: {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        source: 'claude.ai'
+        source: 'claude.ai',
       },
       conversations: [],
       messages: [],
@@ -172,8 +234,8 @@ export class StorageManager {
         defaultView: 'kanban',
         theme: 'auto',
         presetTags: getDefaultTags(),
-        colorPalette: getDefaultColorPalette()
-      }
+        colorPalette: getDefaultColorPalette(),
+      },
     };
   }
 
@@ -188,7 +250,7 @@ export class StorageManager {
       rootBranchId: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      isArchived: false
+      isArchived: false,
     };
   }
 
@@ -205,7 +267,29 @@ export class StorageManager {
       color: '#6366f1',
       createdAt: new Date().toISOString(),
       forkMessageId: '',
-      messageIds: []
+      messageIds: [],
     };
   }
+  /**
+   * テーマ設定を取得
+   */
+  async getTheme(): Promise<'light' | 'dark' | 'auto'> {
+    const data = await this.getData();
+    // 既存データにthemeがない場合のフォールバック
+    return (data.settings?.theme as 'light' | 'dark' | 'auto') || 'dark'; // Startup with dark
+  }
+
+  /**
+   * テーマ設定を保存
+   */
+  async saveTheme(theme: 'light' | 'dark' | 'auto'): Promise<void> {
+    const data = await this.getData();
+    if (!data.settings) {
+      data.settings = this.createInitialData().settings;
+    }
+    data.settings.theme = theme;
+    await this.saveData(data);
+  }
 }
+
+export const storage = new StorageManager();

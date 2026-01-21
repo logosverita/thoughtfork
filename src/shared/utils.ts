@@ -18,7 +18,7 @@ export function getDefaultTags(): Tag[] {
     { id: 'tag-later', name: '後で読む', color: '#f59e0b', isPreset: true, createdAt: now },
     { id: 'tag-question', name: '質問', color: '#3b82f6', isPreset: true, createdAt: now },
     { id: 'tag-idea', name: 'アイデア', color: '#10b981', isPreset: true, createdAt: now },
-    { id: 'tag-reference', name: '参考', color: '#8b5cf6', isPreset: true, createdAt: now }
+    { id: 'tag-reference', name: '参考', color: '#8b5cf6', isPreset: true, createdAt: now },
   ];
 }
 
@@ -39,7 +39,7 @@ export function formatDate(isoString: string): string {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 }
 
@@ -68,4 +68,17 @@ export function isLightColor(hex: string): boolean {
  */
 export function generateBranchColor(index: number): string {
   return BRANCH_COLORS[index % BRANCH_COLORS.length];
+}
+
+/**
+ * デバウンス関数
+ */
+export function debounce<T extends (...args: any[]) => void>(func: T, wait: number): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  return function (...args: Parameters<T>) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
 }

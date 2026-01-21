@@ -4,20 +4,20 @@ import { StorageManager } from '../../shared/storage';
 
 const storage = new StorageManager();
 
-export function useConversation() {
+export function useConversation(conversationId?: string | null) {
   const [data, setData] = useState<ThoughtForkData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const result = await storage.getData();
+      const result = await storage.getData(conversationId || undefined);
       setData(result);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     }
-  }, []);
+  }, [conversationId]);
 
   useEffect(() => {
     setLoading(true);

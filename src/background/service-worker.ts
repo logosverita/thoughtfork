@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener((message: MessageType, sender, sendResponse
 /**
  * メッセージハンドラー
  */
-async function handleMessage(message: MessageType, sender: chrome.runtime.MessageSender) {
+async function handleMessage(message: MessageType, _sender: chrome.runtime.MessageSender) {
   switch (message.type) {
     case 'NEW_MESSAGE':
       return await handleNewMessage(message.payload);
@@ -34,12 +34,14 @@ async function handleNewMessage(message: Message): Promise<void> {
   await storage.addMessage(message);
 
   // Side Panelに通知
-  chrome.runtime.sendMessage({
-    type: 'MESSAGE_ADDED',
-    payload: message
-  }).catch(() => {
-    // Side Panelが開いていない場合は無視
-  });
+  chrome.runtime
+    .sendMessage({
+      type: 'MESSAGE_ADDED',
+      payload: message,
+    })
+    .catch(() => {
+      // Side Panelが開いていない場合は無視
+    });
 }
 
 /**

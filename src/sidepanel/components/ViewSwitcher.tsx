@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ViewType = 'kanban' | 'network' | '3d';
+type ViewType = 'kanban' | 'network' | '3d' | 'dashboard';
 
 interface Props {
   currentView: ViewType;
@@ -11,12 +11,13 @@ export function ViewSwitcher({ currentView, onViewChange }: Props) {
   const views: { id: ViewType; label: string; icon: string }[] = [
     { id: 'kanban', label: 'カンバン', icon: '▤' },
     { id: 'network', label: '2D', icon: '◉' },
-    { id: '3d', label: '3D', icon: '◈' }
+    { id: '3d', label: '3D', icon: '◈' },
+    { id: 'dashboard', label: '分析', icon: '📊' },
   ];
 
   return (
     <div className="flex bg-gray-800 rounded-lg p-1">
-      {views.map(view => (
+      {views.map((view) => (
         <button
           key={view.id}
           onClick={() => onViewChange(view.id)}

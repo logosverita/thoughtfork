@@ -14,11 +14,13 @@ export function ColorPicker({ currentColor, onSelect, onClose }: Props) {
     <div className="absolute z-50 mt-2 bg-gray-800 rounded-lg shadow-lg p-3 top-full left-0">
       <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-700">
         <span className="text-sm font-medium">色を選択</span>
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">×</button>
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">
+          ×
+        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        {colors.map(color => (
+        {colors.map((color) => (
           <button
             key={color}
             onClick={() => onSelect(color)}

@@ -33,7 +33,7 @@ export function parseMessage(
       tagIds: [],
       color: null,
       note: null,
-      isBranchPoint: false
+      isBranchPoint: false,
     };
   } catch (error) {
     console.error('[ThoughtFork] Failed to parse message:', error);
@@ -44,7 +44,10 @@ export function parseMessage(
 /**
  * メッセージのロールを判定
  */
-function detectRole(element: HTMLElement): 'human' | 'assistant' | null {
+/**
+ * メッセージのロールを判定
+ */
+export function detectRole(element: HTMLElement): 'human' | 'assistant' | null {
   // Claude.aiの構造に基づいて判定
   const testId = element.getAttribute('data-testid') || '';
 
@@ -58,7 +61,19 @@ function detectRole(element: HTMLElement): 'human' | 'assistant' | null {
 
   // フォールバック: クラス名やテキスト内容で判定
   const text = element.textContent || '';
-  if (element.classList.contains('human') || text.startsWith('You:')) {
+  if (
+    element.classList.contains('human') ||
+    text.startsWith('You:') ||
+    element.querySelector('.font-user-message')
+  ) {
+    return 'human';
+  }
+
+  // 追加のヒューリスティック: アイコンや特定のクラス構造
+  if (
+    element.querySelector('div[class*="text-user"]') ||
+    element.innerHTML.includes('User avatar')
+  ) {
     return 'human';
   }
 
@@ -68,11 +83,13 @@ function detectRole(element: HTMLElement): 'human' | 'assistant' | null {
 /**
  * メッセージコンテンツを抽出
  */
-function extractContent(element: HTMLElement): string {
+export function extractContent(element: HTMLElement): string {
   // プロセステキストを除外
-  const contentEl = element.querySelector('.prose')
-    || element.querySelector('[data-testid="message-content"]')
-    || element;
+  const contentEl =
+    element.querySelector('.prose') ||
+    element.querySelector('[data-testid="message-content"]') ||
+    element.querySelector('.markdown-prose') ||
+    element;
 
   // コードブロック、リストなども含めてテキスト化
   return cleanContent(contentEl.innerHTML);
@@ -86,16 +103,16 @@ function cleanContent(html: string): string {
   temp.innerHTML = html;
 
   // コードブロックを保持
-  temp.querySelectorAll('pre code').forEach(el => {
+  temp.querySelectorAll('pre code').forEach((el) => {
     el.textContent = `\n\`\`\`\n${el.textContent}\n\`\`\`\n`;
   });
 
   // 改行を保持
-  temp.querySelectorAll('br').forEach(el => {
+  temp.querySelectorAll('br').forEach((el) => {
     el.replaceWith('\n');
   });
 
-  temp.querySelectorAll('p, div').forEach(el => {
+  temp.querySelectorAll('p, div').forEach((el) => {
     el.append('\n');
   });
 
